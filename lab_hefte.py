@@ -1156,40 +1156,14 @@ def show_data_analysis():
                         # Store in session state
                         st.session_state.calculated_data = data
                         st.success("Data loaded successfully!")
-                        
-                        # Create a fixed-size container with CSS
-                        st.markdown("""
-                        <style>
-                        .fixed-table-container {
-                            height: 300px;
-                            width: 600px;
-                            overflow: auto;
-                            border: 1px solid #e6e9ef;
-                            border-radius: 5px;
-                            padding: 0;
-                            margin-bottom: 10px;
-                        }
-                        </style>
-                        """, unsafe_allow_html=True)
-                        
-                        # Display the dataframe in a fixed-size container
-                        st.markdown('<div class="fixed-table-container">', unsafe_allow_html=True)
-                        st.dataframe(
-                            data,
-                            use_container_width=False,
-                            width=580,
-                            height=280
-                        )
-                        st.markdown('</div>', unsafe_allow_html=True)
-                        
-                        # Display the cached dataframe instead of directly displaying data
-                        st.dataframe(get_cached_dataframe(), use_container_width=True)
+                        st.dataframe(data, use_container_width=True)
             except Exception as e:
                 st.error(f"Error loading data: {e}")
                 st.info(f"Detailed error: {str(e)}")
                 data = None
         else:
-            data = None                      
+            data = None
+                      
     else:  # Use Example Data
         st.subheader("Example Data")
         
