@@ -30,7 +30,7 @@ def main():
             return base64.b64encode(img_file.read()).decode('utf-8')
 
     # Load your image from a local path
-    image_path = ("cartoon.JPG")
+    image_path = (r"C:\Users\mas082\OneDrive - UiT Office 365\Desktop\Introduce_Your_Self\cartoon.JPG")
     # Get the base64 string of the image
     image_base64 = image_to_base64(image_path)
 
@@ -1282,7 +1282,6 @@ def show_data_analysis():
                 # Store in session state
                 st.session_state.calculated_data = data
                 # Display the data in fixed container
-                st.markdown('<div class="fixed-table-container">', unsafe_allow_html=True)
                 st.dataframe(
                     data,
                     use_container_width=False,
@@ -1384,21 +1383,38 @@ def show_data_analysis():
             # Ask for parameters to calculate release percentage
             st.warning("Release percentage not found in data. Please provide parameters to calculate it.")
             
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                calc_medium_volume = st.number_input("Medium volume (ml):", min_value=1.0, value=150.0)
-            with col2:
-                calc_form_weight = st.number_input("Formulation weight (g):", min_value=0.1, value=1.0)
-            with col3:
-                calc_drug_conc = st.number_input("Drug conc (%):", min_value=0.1, value=2.0)
+            # Use a form for parameter inputs and calculation
+            with st.form("release_params_form"):
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    calc_medium_volume = st.number_input("Medium volume (ml):", min_value=1.0, value=150.0)
+                with col2:
+                    calc_form_weight = st.number_input("Formulation weight (g):", min_value=0.1, value=1.0)
+                with col3:
+                    calc_drug_conc = st.number_input("Drug conc (%):", min_value=0.1, value=2.0)
+                
+                # Add calculation button
+                calculate_btn = st.form_submit_button("Calculate Release Parameters")
             
-            # Calculate total drug
-            calc_total_drug_mg = calc_form_weight * calc_drug_conc * 10
-            
-            # Calculate release parameters
-            data['Cumulative Release (mg)'] = data['Concentration (μg/ml)'] * calc_medium_volume / 1000
-            data['Cumulative Release (%)'] = (data['Cumulative Release (mg)'] / calc_total_drug_mg) * 100
-        
+            # Only proceed with calculation if button was clicked
+            if calculate_btn:
+                # Calculate total drug amount in the formulation
+                calc_total_drug_mg = calc_form_weight * calc_drug_conc * 10
+                
+                # Calculate release parameters
+                data['Cumulative Release (mg)'] = data['Concentration (μg/ml)'] * calc_medium_volume / 1000
+                data['Cumulative Release (%)'] = (data['Cumulative Release (mg)'] / calc_total_drug_mg) * 100
+                
+                # Store updated data in session state
+                st.session_state.calculated_data = data
+                
+                # Show success message
+                st.success("Release parameters calculated successfully!")
+            else:
+                # Stop further visualization until parameters are calculated
+                st.info("Please enter parameters and click 'Calculate Release Parameters' to view plots.")
+                return
+
         # Ensure Square Root of Time column exists
         if 'Square Root of Time' not in data.columns:
             data['Square Root of Time'] = np.sqrt(data['Time (min)'])
@@ -1510,7 +1526,6 @@ def show_data_analysis():
             # Display results if we have any
             if results:
                 # Display in fixed container
-                st.markdown('<div class="small-table-container">', unsafe_allow_html=True)
                 st.dataframe(
                     pd.DataFrame(results),
                     use_container_width=False,
