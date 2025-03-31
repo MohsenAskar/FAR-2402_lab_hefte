@@ -7,7 +7,6 @@ import streamlit as st
 import requests
 import json
 from datetime import datetime
-from openpyxl import Workbook
 
 # Main app file
 def main():
@@ -31,7 +30,7 @@ def main():
             return base64.b64encode(img_file.read()).decode('utf-8')
 
     # Load your image from a local path
-    image_path = ("cartoon.JPG")
+    image_path = (r"C:\Users\mas082\OneDrive - UiT Office 365\Desktop\Introduce_Your_Self\cartoon.JPG")
     # Get the base64 string of the image
     image_base64 = image_to_base64(image_path)
 
@@ -962,6 +961,30 @@ def show_data_analysis():
     
     st.title("Drug Release Data Analysis Tool")
     
+    # Add CSS for fixed-size tables
+    st.markdown("""
+    <style>
+    .fixed-table-container {
+        height: 300px;
+        width: 700px;
+        overflow: auto;
+        border: 1px solid #e6e9ef;
+        border-radius: 5px;
+        padding: 0;
+        margin-bottom: 15px;
+    }
+    .small-table-container {
+        height: 200px;
+        width: 700px;
+        overflow: auto;
+        border: 1px solid #e6e9ef;
+        border-radius: 5px;
+        padding: 0;
+        margin-bottom: 15px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Initialize session state for calculated data if not already present
     if 'calculated_data' not in st.session_state:
         st.session_state.calculated_data = None
@@ -1040,7 +1063,8 @@ def show_data_analysis():
                     min_value=0.0,
                     format="%.2f"
                 )
-            }
+            },
+            height=300  # Set fixed height for data editor
         )
         
         # Remove rows with empty time values before calculations
@@ -1085,9 +1109,16 @@ def show_data_analysis():
                 # Store calculated data in session state
                 st.session_state.calculated_data = edited_df
                 
-                # Display enriched dataframe
+                # Display enriched dataframe in fixed container
                 st.subheader("Calculated Data")
-                st.dataframe(edited_df, use_container_width=True)
+                st.markdown('<div class="fixed-table-container">', unsafe_allow_html=True)
+                st.dataframe(
+                    edited_df,
+                    use_container_width=False,
+                    width=680,
+                    height=280
+                )
+                st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.warning("No valid data points after processing. Please check your data entry.")
     
@@ -1136,34 +1167,41 @@ def show_data_analysis():
                     if not conc_col:
                         missing_columns.append('Concentration')
                     
-                    if missing_columns:
-                        st.error(f"Missing required columns in file: {', '.join(missing_columns)}")
-                        st.info("Your file should include at minimum columns for Time and Concentration")
-                        data = None
-                    else:
-                        # Rename columns to standard format for consistency in the app
-                        column_mapping = {}
-                        if time_col:
-                            column_mapping[time_col] = 'Time (min)'
-                        if conc_col:
-                            column_mapping[conc_col] = 'Concentration (μg/ml)'
-                        if form_col:
-                            column_mapping[form_col] = 'Formulation'
-                        
-                        # Apply renaming
-                        data = data.rename(columns=column_mapping)
-                        
-                        # Store in session state
-                        st.session_state.calculated_data = data
-                        st.success("Data loaded successfully!")
-                        st.dataframe(data, use_container_width=True)
+                if missing_columns:
+                    st.error(f"Missing required columns in file: {', '.join(missing_columns)}")
+                    st.info("Your file should include at minimum columns for Time and Concentration")
+                    data = None
+                else:
+                    # Rename columns to standard format for consistency in the app
+                    column_mapping = {}
+                    if time_col:
+                        column_mapping[time_col] = 'Time (min)'
+                    if conc_col:
+                        column_mapping[conc_col] = 'Concentration (μg/ml)'
+                    if form_col:
+                        column_mapping[form_col] = 'Formulation'
+                    
+                    # Apply renaming
+                    data = data.rename(columns=column_mapping)
+                    
+                    # Store in session state
+                    st.session_state.calculated_data = data
+                    st.success("Data loaded successfully!")
+                    
+                    # Display dataframe directly without container divs
+                    st.dataframe(
+                        data,
+                        use_container_width=False,
+                        width=680,
+                        height=280
+                    )
             except Exception as e:
                 st.error(f"Error loading data: {e}")
                 st.info(f"Detailed error: {str(e)}")
                 data = None
         else:
             data = None
-                      
+                        
     else:  # Use Example Data
         st.subheader("Example Data")
         
@@ -1243,8 +1281,15 @@ def show_data_analysis():
                 data = pd.concat(all_data, ignore_index=True)
                 # Store in session state
                 st.session_state.calculated_data = data
-                # Display the data
-                st.dataframe(data, use_container_width=True)
+                # Display the data in fixed container
+                st.markdown('<div class="fixed-table-container">', unsafe_allow_html=True)
+                st.dataframe(
+                    data,
+                    use_container_width=False,
+                    width=680,
+                    height=280
+                )
+                st.markdown('</div>', unsafe_allow_html=True)
             else:
                 data = None
     
@@ -1464,7 +1509,15 @@ def show_data_analysis():
             
             # Display results if we have any
             if results:
-                st.dataframe(pd.DataFrame(results), use_container_width=True)
+                # Display in fixed container
+                st.markdown('<div class="small-table-container">', unsafe_allow_html=True)
+                st.dataframe(
+                    pd.DataFrame(results),
+                    use_container_width=False,
+                    width=680,
+                    height=180
+                )
+                st.markdown('</div>', unsafe_allow_html=True)
                 
                 # Compare release rates
                 if len(results) > 1:
@@ -1509,6 +1562,7 @@ def show_data_analysis():
                     st.warning(f"Could not calculate regression: {e}")
             else:
                 st.warning("Need at least 2 data points to analyze release kinetics.")
+
 def show_protocol():
     st.title("Laboratory Protocol")
     
