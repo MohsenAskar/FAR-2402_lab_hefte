@@ -1136,36 +1136,33 @@ def show_data_analysis():
                     if not conc_col:
                         missing_columns.append('Concentration')
                     
-                # After successful data processing:
-                if missing_columns:
-                    st.error(f"Missing required columns in file: {', '.join(missing_columns)}")
-                    st.info("Your file should include at minimum columns for Time and Concentration")
-                    data = None
-                else:
-                    # Rename columns to standard format for consistency in the app
-                    column_mapping = {}
-                    if time_col:
-                        column_mapping[time_col] = 'Time (min)'
-                    if conc_col:
-                        column_mapping[conc_col] = 'Concentration (μg/ml)'
-                    if form_col:
-                        column_mapping[form_col] = 'Formulation'
-                    
-                    # Apply renaming
-                    data = data.rename(columns=column_mapping)
-                    
-                    # Store in session state
-                    st.session_state.calculated_data = data
-                    st.success("Data loaded successfully!")
-                    
-                    # Use st.experimental_memo to cache the dataframe display
-                    # This prevents rerendering when other widgets change
-                    @st.cache_data
-                    def get_dataframe():
-                        return data
+                    if missing_columns:
+                        st.error(f"Missing required columns in file: {', '.join(missing_columns)}")
+                        st.info("Your file should include at minimum columns for Time and Concentration")
+                        data = None
+                    else:
+                        # Rename columns to standard format for consistency in the app
+                        column_mapping = {}
+                        if time_col:
+                            column_mapping[time_col] = 'Time (min)'
+                        if conc_col:
+                            column_mapping[conc_col] = 'Concentration (μg/ml)'
+                        if form_col:
+                            column_mapping[form_col] = 'Formulation'
                         
-                    # Display the cached dataframe
-                    st.dataframe(get_dataframe(), use_container_width=True)
+                        # Apply renaming
+                        data = data.rename(columns=column_mapping)
+                        
+                        # Store in session state
+                        st.session_state.calculated_data = data
+                        st.success("Data loaded successfully!")
+                        st.dataframe(data, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error loading data: {e}")
+                st.info(f"Detailed error: {str(e)}")
+                data = None
+        else:
+            data = None
                       
     else:  # Use Example Data
         st.subheader("Example Data")
