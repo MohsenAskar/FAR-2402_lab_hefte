@@ -1091,85 +1091,85 @@ def show_data_analysis():
             else:
                 st.warning("No valid data points after processing. Please check your data entry.")
     
-elif data_source == "Upload Your Lab Data":
-    st.subheader("Upload Your Data")
-    
-    # Add imports at the top of your function
-    import pandas as pd
-    from io import BytesIO
-    
-    uploaded_file = st.file_uploader("Upload your data file", type=["csv", "xlsx", "xls"])
-    # Add clear instructions about required column format
-    st.caption("ℹ️ File format: Your spreadsheet should have columns named 'Time' and 'Concentration'. For multiple formulations, include a 'Formulation' column.")
+    elif data_source == "Upload Your Lab Data":
+        st.subheader("Upload Your Data")
         
-    if uploaded_file is not None:
-        try:
-            # Get file extension
-            file_extension = uploaded_file.name.split(".")[-1].lower()
+        # Add imports at the top of your function
+        import pandas as pd
+        from io import BytesIO
+        
+        uploaded_file = st.file_uploader("Upload your data file", type=["csv", "xlsx", "xls"])
+        # Add clear instructions about required column format
+        st.caption("ℹ️ File format: Your spreadsheet should have columns named 'Time' and 'Concentration'. For multiple formulations, include a 'Formulation' column.")
             
-            # Handle different file types
-            if file_extension == "csv":
-                # CSV handling
-                data = pd.read_csv(uploaded_file)
-            elif file_extension in ["xlsx", "xls"]:
-                # Excel handling
-                data = pd.read_excel(uploaded_file, engine='openpyxl')
-            else:
-                st.error(f"Unsupported file format: {file_extension}")
-                data = None
+        if uploaded_file is not None:
+            try:
+                # Get file extension
+                file_extension = uploaded_file.name.split(".")[-1].lower()
                 
-            # Check for required columns (with more flexible column name matching)
-            if data is not None:
-                # Define possible column name variations
-                time_columns = ['Time', 'Time (min)', 'time', 'TIME', 'Time(min)', 'time(min)']
-                conc_columns = ['Concentration', 'Concentration (μg/ml)', 'conc', 'CONCENTRATION', 'Conc (μg/ml)', 'concentration']
-                form_columns = ['Formulation', 'formulation', 'FORMULATION', 'Form', 'form', 'Base', 'base', 'Formula']
-                
-                # Try to find matching columns
-                time_col = next((col for col in data.columns if col in time_columns), None)
-                conc_col = next((col for col in data.columns if col in conc_columns), None)
-                form_col = next((col for col in data.columns if col in form_columns), None)
-                
-                missing_columns = []
-                if not time_col:
-                    missing_columns.append('Time')
-                if not conc_col:
-                    missing_columns.append('Concentration')
-                
-                if missing_columns:
-                    st.error(f"Missing required columns in file: {', '.join(missing_columns)}")
-                    st.info("Your file should include at minimum columns for Time and Concentration")
-                    data = None
+                # Handle different file types
+                if file_extension == "csv":
+                    # CSV handling
+                    data = pd.read_csv(uploaded_file)
+                elif file_extension in ["xlsx", "xls"]:
+                    # Excel handling
+                    data = pd.read_excel(uploaded_file, engine='openpyxl')
                 else:
-                    # Rename columns to standard format for consistency in the app
-                    column_mapping = {}
-                    if time_col:
-                        column_mapping[time_col] = 'Time (min)'
-                    if conc_col:
-                        column_mapping[conc_col] = 'Concentration (μg/ml)'
-                    if form_col:
-                        column_mapping[form_col] = 'Formulation'
+                    st.error(f"Unsupported file format: {file_extension}")
+                    data = None
                     
-                    # Apply renaming
-                    data = data.rename(columns=column_mapping)
+                # Check for required columns (with more flexible column name matching)
+                if data is not None:
+                    # Define possible column name variations
+                    time_columns = ['Time', 'Time (min)', 'time', 'TIME', 'Time(min)', 'time(min)']
+                    conc_columns = ['Concentration', 'Concentration (μg/ml)', 'conc', 'CONCENTRATION', 'Conc (μg/ml)', 'concentration']
+                    form_columns = ['Formulation', 'formulation', 'FORMULATION', 'Form', 'form', 'Base', 'base', 'Formula']
                     
-                    # Store in session state
-                    st.session_state.calculated_data = data
-                    st.success("Data loaded successfully!")
+                    # Try to find matching columns
+                    time_col = next((col for col in data.columns if col in time_columns), None)
+                    conc_col = next((col for col in data.columns if col in conc_columns), None)
+                    form_col = next((col for col in data.columns if col in form_columns), None)
                     
-                    # Use st.cache_data to prevent table from "shaking" on reruns
-                    @st.cache_data(ttl=3600)
-                    def get_cached_dataframe():
-                        return data
+                    missing_columns = []
+                    if not time_col:
+                        missing_columns.append('Time')
+                    if not conc_col:
+                        missing_columns.append('Concentration')
                     
-                    # Display the cached dataframe instead of directly displaying data
-                    st.dataframe(get_cached_dataframe(), use_container_width=True)
-        except Exception as e:
-            st.error(f"Error loading data: {e}")
-            st.info(f"Detailed error: {str(e)}")
-            data = None
-    else:
-        data = None                      
+                    if missing_columns:
+                        st.error(f"Missing required columns in file: {', '.join(missing_columns)}")
+                        st.info("Your file should include at minimum columns for Time and Concentration")
+                        data = None
+                    else:
+                        # Rename columns to standard format for consistency in the app
+                        column_mapping = {}
+                        if time_col:
+                            column_mapping[time_col] = 'Time (min)'
+                        if conc_col:
+                            column_mapping[conc_col] = 'Concentration (μg/ml)'
+                        if form_col:
+                            column_mapping[form_col] = 'Formulation'
+                        
+                        # Apply renaming
+                        data = data.rename(columns=column_mapping)
+                        
+                        # Store in session state
+                        st.session_state.calculated_data = data
+                        st.success("Data loaded successfully!")
+                        
+                        # Use st.cache_data to prevent table from "shaking" on reruns
+                        @st.cache_data(ttl=3600)
+                        def get_cached_dataframe():
+                            return data
+                        
+                        # Display the cached dataframe instead of directly displaying data
+                        st.dataframe(get_cached_dataframe(), use_container_width=True)
+            except Exception as e:
+                st.error(f"Error loading data: {e}")
+                st.info(f"Detailed error: {str(e)}")
+                data = None
+        else:
+            data = None                      
     else:  # Use Example Data
         st.subheader("Example Data")
         
