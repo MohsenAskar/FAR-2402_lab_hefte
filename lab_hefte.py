@@ -1157,10 +1157,30 @@ def show_data_analysis():
                         st.session_state.calculated_data = data
                         st.success("Data loaded successfully!")
                         
-                        # Use st.cache_data to prevent table from "shaking" on reruns
-                        @st.cache_data(ttl=3600)
-                        def get_cached_dataframe():
-                            return data
+                        # Create a fixed-size container with CSS
+                        st.markdown("""
+                        <style>
+                        .fixed-table-container {
+                            height: 300px;
+                            width: 600px;
+                            overflow: auto;
+                            border: 1px solid #e6e9ef;
+                            border-radius: 5px;
+                            padding: 0;
+                            margin-bottom: 10px;
+                        }
+                        </style>
+                        """, unsafe_allow_html=True)
+                        
+                        # Display the dataframe in a fixed-size container
+                        st.markdown('<div class="fixed-table-container">', unsafe_allow_html=True)
+                        st.dataframe(
+                            data,
+                            use_container_width=False,
+                            width=580,
+                            height=280
+                        )
+                        st.markdown('</div>', unsafe_allow_html=True)
                         
                         # Display the cached dataframe instead of directly displaying data
                         st.dataframe(get_cached_dataframe(), use_container_width=True)
