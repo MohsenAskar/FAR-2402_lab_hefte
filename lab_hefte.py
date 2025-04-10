@@ -137,11 +137,7 @@ def main():
         </style>
         <div class="header">
             <img src="data:image/jpeg;base64,{image_base64}" alt="Mohsen Askar">
-            <div class="header-text">
-                <div>Developed by:</div>
-                <div>Mohsen Askar</div>
-            </div>
-        </div>
+            <div class="header-text">Developed by: Mohsen Askar</div>
         </div>
         """,
         unsafe_allow_html=True
