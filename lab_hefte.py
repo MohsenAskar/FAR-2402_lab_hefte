@@ -114,7 +114,7 @@ def main():
         <style>
         .header {{
             position: absolute;  /* Fix the position */
-            top: -20px;  /* Adjust as needed */
+            top: 5px;  /* Adjust as needed */
             right: -40px;  /* Align to the right */
             display: flex;
             justify-content: flex-end;
