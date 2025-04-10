@@ -440,7 +440,7 @@ def show_properties():
                 styled_df, 
                 hide_index=True, 
                 use_container_width=False,  # Remove or set to False
-                width=900  # Set an explicit width in pixels
+                width=680  # Set an explicit width in pixels
             )            
             # Display score
             if total_cells > 0:
