@@ -396,7 +396,7 @@ def show_home():
             st.rerun()
 
 def show_properties():
-    st.title("Drug and Excipient Properties Database")
+    st.title("Drug and Excipient Properties")
     
     st.markdown("""
     ## Interactive Properties Quiz
