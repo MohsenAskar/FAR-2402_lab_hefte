@@ -1,3 +1,4 @@
+
 import streamlit as st
 import sys
 import os
@@ -17,6 +18,79 @@ def main():
         initial_sidebar_state="expanded"
     )
     
+    # Add CSS fixes for table stability
+    st.markdown("""
+    <style>
+    /* Force tables to stay fixed width with no reflow */
+    [data-testid="stDataFrame"] > div {
+        width: 680px !important;
+        max-width: 680px !important;
+        min-width: 680px !important;
+        overflow-x: auto !important;
+        margin: 0 auto;
+        transform: translateZ(0);
+    }
+
+    /* Force container widths to be consistent */
+    .element-container {
+        width: 100% !important;
+    }
+
+    /* Prevent layout shifts */
+    .block-container {
+        padding-bottom: 1rem;
+        padding-top: 1rem;
+    }
+
+    /* Stabilize tables */
+    .stDataFrame {
+        will-change: transform;
+        transform: translateZ(0);
+    }
+    
+    /* Table container styles */
+    .fixed-table-container {
+        width: 680px;
+        margin: 0 auto;
+        overflow-x: auto;
+        border: 1px solid #e6e9ef;
+        border-radius: 5px;
+        padding: 0;
+        margin-bottom: 15px;
+        transform: translateZ(0);
+    }
+    .small-table-container {
+        width: 680px;
+        margin: 0 auto;
+        overflow-x: auto;
+        border: 1px solid #e6e9ef;
+        border-radius: 5px;
+        padding: 0;
+        margin-bottom: 15px;
+        transform: translateZ(0);
+    }
+    
+    /* Static HTML table styles */
+    .static-table {
+        width: 680px;
+        margin: 0 auto;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    .static-table th {
+        background-color: #f5f5f5;
+        padding: 8px;
+        text-align: left;
+        border-bottom: 2px solid #ddd;
+    }
+    .static-table td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Set up sidebar navigation
     st.sidebar.title("FAR-2402 Lab Tool")
     st.sidebar.image("https://en.uit.no/ressurs/uit/2020web/gfx/logo/UiT_Logo_Eng_Sort.svg", width=200)       
@@ -30,7 +104,7 @@ def main():
             return base64.b64encode(img_file.read()).decode('utf-8')
 
     # Load your image from a local path
-    image_path = ("cartoon.JPG")
+    image_path = (r"C:\Users\mas082\OneDrive - UiT Office 365\Desktop\Introduce_Your_Self\cartoon.JPG")
     # Get the base64 string of the image
     image_base64 = image_to_base64(image_path)
 
@@ -40,7 +114,7 @@ def main():
         <style>
         .header {{
             position: absolute;  /* Fix the position */
-            top: -60px;  /* Adjust as needed */
+            top: 10px;  /* Adjust as needed */
             right: -40px;  /* Align to the right */
             display: flex;
             justify-content: flex-end;
@@ -218,6 +292,40 @@ def main():
         """,
         unsafe_allow_html=True
     )
+
+# Function to create static HTML tables for better stability
+def create_html_table(df, highlight_cells=None):
+    """
+    Create a static HTML table from a pandas DataFrame
+    highlight_cells: Optional dictionary mapping (row, col) tuples to CSS styles
+    """
+    if highlight_cells is None:
+        highlight_cells = {}
+    
+    table_html = '<div class="fixed-table-container">'
+    table_html += '<table class="static-table">'
+    
+    # Add header
+    table_html += '<thead><tr>'
+    for col in df.columns:
+        table_html += f'<th>{col}</th>'
+    table_html += '</tr></thead>'
+    
+    # Add body
+    table_html += '<tbody>'
+    for i, (_, row) in enumerate(df.iterrows()):
+        table_html += '<tr>'
+        for j, val in enumerate(row):
+            # Check if this cell needs special styling
+            cell_style = ''
+            if (i, j) in highlight_cells:
+                cell_style = f' style="{highlight_cells[(i, j)]}"'
+            
+            table_html += f'<td{cell_style}>{val}</td>'
+        table_html += '</tr>'
+    table_html += '</tbody></table></div>'
+    
+    return table_html
 # Define page content functions
 def show_home():
     st.title("FAR-2402: Drug Formulation and Release Visualization Tool")
@@ -335,14 +443,17 @@ def show_properties():
             })
             st.session_state.drug_answers = empty_df
        
-        # Display editable dataframe
-        edited_df = st.data_editor(
-            st.session_state.drug_answers,
-            disabled=["Property"],
-            hide_index=True,
-            key="drug_properties_editor",
-            use_container_width=False,
-            width=900
+        # Wrap in container to isolate and prevent layout shifts
+        with st.container():
+            # Display editable dataframe with fixed width
+            edited_df = st.data_editor(
+                st.session_state.drug_answers,
+                disabled=["Property"],
+                hide_index=True,
+                key="drug_properties_editor",
+                use_container_width=False,
+                width=680,  # Reduced from 900px to 680px
+                height=300  # Fixed height to prevent resizing
             )
         
         # Update session state with edited values
@@ -363,7 +474,11 @@ def show_properties():
             correct_cells = 0
             
             # Check each cell against correct answers
+            highlight_cells = {}  # For HTML table styling
+            
             for col in ['Lidocaine', 'Lidocaine HCl', 'Salicylic Acid']:
+                col_idx = list(styled_df.columns).index(col)
+                
                 for i, prop in enumerate(correct_answers['Property']):
                     if styled_df.loc[i, col] == '':
                         # Empty cell - no styling
@@ -384,18 +499,23 @@ def show_properties():
                                 student_val = float(student_answer)
                                 if min_val <= student_val <= max_val:
                                     style_df.loc[i, col] = 'background-color: #c6efce'  # Light green
+                                    highlight_cells[(i, col_idx)] = 'background-color: #c6efce'
                                     correct_cells += 1
                                 else:
                                     style_df.loc[i, col] = 'background-color: #ffc7ce'  # Light red
+                                    highlight_cells[(i, col_idx)] = 'background-color: #ffc7ce'
                             except:
                                 style_df.loc[i, col] = 'background-color: #ffc7ce'  # Light red
+                                highlight_cells[(i, col_idx)] = 'background-color: #ffc7ce'
                         except:
                             # Fall back to exact comparison if range parsing fails
                             if student_answer == correct_answer:
                                 style_df.loc[i, col] = 'background-color: #c6efce'  # Light green
+                                highlight_cells[(i, col_idx)] = 'background-color: #c6efce'
                                 correct_cells += 1
                             else:
                                 style_df.loc[i, col] = 'background-color: #ffc7ce'  # Light red
+                                highlight_cells[(i, col_idx)] = 'background-color: #ffc7ce'
                     
                     # Check approximate matches for numeric values
                     elif correct_answer.replace('.', '', 1).isdigit() and student_answer.replace('.', '', 1).isdigit():
@@ -406,23 +526,29 @@ def show_properties():
                             # Allow 5% tolerance for numeric values
                             if abs(correct_val - student_val) / correct_val <= 0.05:
                                 style_df.loc[i, col] = 'background-color: #c6efce'  # Light green
+                                highlight_cells[(i, col_idx)] = 'background-color: #c6efce'
                                 correct_cells += 1
                             else:
                                 style_df.loc[i, col] = 'background-color: #ffc7ce'  # Light red
+                                highlight_cells[(i, col_idx)] = 'background-color: #ffc7ce'
                         except:
                             # Fall back to exact comparison if float conversion fails
                             if student_answer == correct_answer:
                                 style_df.loc[i, col] = 'background-color: #c6efce'  # Light green
+                                highlight_cells[(i, col_idx)] = 'background-color: #c6efce'
                                 correct_cells += 1
                             else:
                                 style_df.loc[i, col] = 'background-color: #ffc7ce'  # Light red
+                                highlight_cells[(i, col_idx)] = 'background-color: #ffc7ce'
                     
                     # Exact match for text values
                     elif student_answer == correct_answer:
                         style_df.loc[i, col] = 'background-color: #c6efce'  # Light green
+                        highlight_cells[(i, col_idx)] = 'background-color: #c6efce'
                         correct_cells += 1
                     else:
                         style_df.loc[i, col] = 'background-color: #ffc7ce'  # Light red
+                        highlight_cells[(i, col_idx)] = 'background-color: #ffc7ce'
             
             # Calculate score if any answers were provided
             if total_cells > 0:
@@ -431,17 +557,10 @@ def show_properties():
             else:
                 st.session_state.drug_score = 0
             
-            # Apply styles and display
-            def highlight_cells(x):
-                return style_df
+            # Use static HTML table for more stability instead of dataframe styling
+            html_table = create_html_table(styled_df, highlight_cells)
+            st.markdown(html_table, unsafe_allow_html=True)
             
-            styled_df = styled_df.style.apply(highlight_cells, axis=None)
-            st.dataframe(
-                styled_df, 
-                hide_index=True, 
-                use_container_width=False,  # Remove or set to False
-                width=680  # Set an explicit width in pixels
-            )            
             # Display score
             if total_cells > 0:
                 if score >= 90:
@@ -522,7 +641,7 @@ def show_properties():
     with tab3:
         st.subheader("Formulation Compositions")
         
-        # Display formulation compositions
+        # Display formulation compositions using static HTML table
         import pandas as pd
         import numpy as np
         import plotly.express as px
@@ -537,7 +656,9 @@ def show_properties():
             'Base VI (%)': [0, 0, 0, 15, 0, 0, 0, 0, 85]
         })
         
-        st.dataframe(bases_df, use_container_width=True)
+        # Use static HTML table instead of dataframe
+        html_table = create_html_table(bases_df)
+        st.markdown(html_table, unsafe_allow_html=True)
         
         # Show bar chart of compositions
         st.subheader("Composition Visualization")
@@ -961,30 +1082,6 @@ def show_data_analysis():
     
     st.title("Drug Release Data Analysis Tool")
     
-    # Add CSS for fixed-size tables
-    st.markdown("""
-    <style>
-    .fixed-table-container {
-        height: 300px;
-        width: 700px;
-        overflow: auto;
-        border: 1px solid #e6e9ef;
-        border-radius: 5px;
-        padding: 0;
-        margin-bottom: 15px;
-    }
-    .small-table-container {
-        height: 200px;
-        width: 700px;
-        overflow: auto;
-        border: 1px solid #e6e9ef;
-        border-radius: 5px;
-        padding: 0;
-        margin-bottom: 15px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
     # Initialize session state for calculated data if not already present
     if 'calculated_data' not in st.session_state:
         st.session_state.calculated_data = None
@@ -1044,28 +1141,31 @@ def show_data_analysis():
         else:
             initial_df = pd.DataFrame({"Time (min)": [], "Concentration (μg/ml)": []})
         
-        # Make the dataframe fully editable
+        # Make the dataframe fully editable - wrap in container for stability
         st.subheader(f"Enter your data (you can add/modify time points as needed)")
         
-        edited_df = st.data_editor(
-            initial_df,
-            num_rows="dynamic",
-            key="manual_data_editor",
-            column_config={
-                "Time (min)": st.column_config.NumberColumn(
-                    "Time (min)",
-                    help="Sampling time in minutes",
-                    format="%.1f"
-                ),
-                "Concentration (μg/ml)": st.column_config.NumberColumn(
-                    "Concentration (μg/ml)",
-                    help="Measured concentration from standard curve",
-                    min_value=0.0,
-                    format="%.2f"
-                )
-            },
-            height=300  # Set fixed height for data editor
-        )
+        with st.container():
+            edited_df = st.data_editor(
+                initial_df,
+                num_rows="dynamic",
+                key="manual_data_editor",
+                column_config={
+                    "Time (min)": st.column_config.NumberColumn(
+                        "Time (min)",
+                        help="Sampling time in minutes",
+                        format="%.1f"
+                    ),
+                    "Concentration (μg/ml)": st.column_config.NumberColumn(
+                        "Concentration (μg/ml)",
+                        help="Measured concentration from standard curve",
+                        min_value=0.0,
+                        format="%.2f"
+                    )
+                },
+                use_container_width=False,
+                width=680,  # Fixed width
+                height=300  # Fixed height for data editor
+            )
         
         # Remove rows with empty time values before calculations
         if not edited_df.empty:
@@ -1109,16 +1209,10 @@ def show_data_analysis():
                 # Store calculated data in session state
                 st.session_state.calculated_data = edited_df
                 
-                # Display enriched dataframe in fixed container
+                # Use static HTML table for more stable display
+                html_table = create_html_table(edited_df)
                 st.subheader("Calculated Data")
-                st.markdown('<div class="fixed-table-container">', unsafe_allow_html=True)
-                st.dataframe(
-                    edited_df,
-                    use_container_width=False,
-                    width=680,
-                    height=280
-                )
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown(html_table, unsafe_allow_html=True)
             else:
                 st.warning("No valid data points after processing. Please check your data entry.")
     
@@ -1188,13 +1282,9 @@ def show_data_analysis():
                     st.session_state.calculated_data = data
                     st.success("Data loaded successfully!")
                     
-                    # Display dataframe directly without container divs
-                    st.dataframe(
-                        data,
-                        use_container_width=False,
-                        width=680,
-                        height=280
-                    )
+                    # Use static HTML table for stability
+                    html_table = create_html_table(data)
+                    st.markdown(html_table, unsafe_allow_html=True)
             except Exception as e:
                 st.error(f"Error loading data: {e}")
                 st.info(f"Detailed error: {str(e)}")
@@ -1281,14 +1371,10 @@ def show_data_analysis():
                 data = pd.concat(all_data, ignore_index=True)
                 # Store in session state
                 st.session_state.calculated_data = data
-                # Display the data in fixed container
-                st.dataframe(
-                    data,
-                    use_container_width=False,
-                    width=680,
-                    height=280
-                )
-                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Use static HTML table for stability
+                html_table = create_html_table(data)
+                st.markdown(html_table, unsafe_allow_html=True)
             else:
                 data = None
     
